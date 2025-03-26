@@ -10,7 +10,7 @@ define('APPROOT', dirname(dirname(__FILE__)));
 // URL Root
 define('URLROOT', 'http://localhost/webbanhang');
 // Site Name
-define('SITENAME', 'Quản lý sinh viên');
+define('SITENAME', 'Đăng ký học phần');
 
 // App Version
 define('APPVERSION', '1.0.0'); 

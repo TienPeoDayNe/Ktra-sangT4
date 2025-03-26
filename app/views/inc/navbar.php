@@ -10,10 +10,7 @@ $current_page = isset($_GET['url']) ? $_GET['url'] : '';
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
-                <!-- <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == '' ? 'active' : ''; ?>" 
-                       href="<?php echo URLROOT; ?>">Trang chủ</a>
-                </li> -->
+               
                 <?php if(isset($_SESSION['masv'])) : ?>
                 <li class="nav-item">
                     <a class="nav-link <?php echo $current_page == 'students' ? 'active' : ''; ?>" 

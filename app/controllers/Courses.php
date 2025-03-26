@@ -4,65 +4,88 @@ class Courses extends Controller {
     private $studentModel;
 
     public function __construct() {
-        // Check if user is logged in
-        if(!isset($_SESSION['masv'])) {
-            redirect('auth/login');
-            return;
-        }
-        
         $this->courseModel = $this->model('CourseModel');
         $this->studentModel = $this->model('StudentModel');
     }
 
     public function index() {
+        // Get all courses
         $courses = $this->courseModel->getCourses();
-        $registeredCourses = $this->courseModel->getRegisteredCourses($_SESSION['masv']);
-        $stats = $this->courseModel->getRegistrationStats($_SESSION['masv']);
+        
+        // Get registered courses for current student
+        $registered_courses = [];
+        if(isset($_SESSION['masv'])) {
+            $registeredCourses = $this->courseModel->getRegisteredCourses($_SESSION['masv']);
+            foreach($registeredCourses as $course) {
+                $registered_courses[] = $course->MaHP;
+            }
+        }
 
-        // Create an array of registered course IDs for easy checking
-        $registeredIds = array_map(function($course) {
-            return $course->MaHP;
-        }, $registeredCourses);
+        // Get registration stats for current student
+        $stats = null;
+        if(isset($_SESSION['masv'])) {
+            $stats = $this->courseModel->getRegistrationStats($_SESSION['masv']);
+        }
 
         $data = [
-            'title' => 'Đăng ký học phần',
             'courses' => $courses,
-            'registeredIds' => $registeredIds,
+            'registered_courses' => $registered_courses,
             'stats' => $stats
         ];
 
         $this->view('courses/index', $data);
     }
 
-    public function register($mahp) {
-        if($_SERVER['REQUEST_METHOD'] == 'POST') {
-            // Check if already registered
-            if($this->courseModel->isRegistered($_SESSION['masv'], $mahp)) {
-                flash('course_message', 'Bạn đã đăng ký học phần này rồi', 'alert alert-warning');
-                redirect('courses');
-                return;
-            }
+    public function register($mahp = '') {
+        if(!isset($_SESSION['masv'])) {
+            flash('course_message', 'Bạn cần đăng nhập để đăng ký học phần', 'alert alert-danger');
+            redirect('auth/login');
+        }
 
-            if($this->courseModel->registerCourse($_SESSION['masv'], $mahp)) {
-                flash('course_message', 'Đăng ký học phần thành công');
-                redirect('courses');
-            } else {
-                die('Có lỗi xảy ra khi đăng ký học phần');
-            }
-        } else {
+        if(empty($mahp)) {
+            flash('course_message', 'Không tìm thấy học phần', 'alert alert-danger');
             redirect('courses');
         }
+
+        // Check if course exists and has available slots
+        $course = $this->courseModel->getCourseById($mahp);
+        if(!$course) {
+            flash('course_message', 'Không tìm thấy học phần', 'alert alert-danger');
+            redirect('courses');
+        }
+
+        if($course->SoLuongDaDangKy >= $course->SoLuong) {
+            flash('course_message', 'Học phần đã đủ số lượng', 'alert alert-danger');
+            redirect('courses');
+        }
+
+        // Check if already registered
+        if($this->courseModel->isRegistered($_SESSION['masv'], $mahp)) {
+            flash('course_message', 'Bạn đã đăng ký học phần này rồi', 'alert alert-danger');
+            redirect('courses');
+        }
+
+        // Register for the course
+        if($this->courseModel->registerCourse($_SESSION['masv'], $mahp)) {
+            flash('course_message', 'Đăng ký học phần thành công', 'alert alert-success');
+        } else {
+            flash('course_message', 'Đăng ký học phần thất bại', 'alert alert-danger');
+        }
+
+        redirect('courses');
     }
 
     public function registered() {
+        if(!isset($_SESSION['masv'])) {
+            flash('course_message', 'Bạn cần đăng nhập để xem học phần đã đăng ký', 'alert alert-danger');
+            redirect('auth/login');
+        }
+
         $registeredCourses = $this->courseModel->getRegisteredCourses($_SESSION['masv']);
         $stats = $this->courseModel->getRegistrationStats($_SESSION['masv']);
-        
-        // Get student information including major
         $student = $this->studentModel->getStudentWithMajor($_SESSION['masv']);
 
         $data = [
-            'title' => 'Học phần đã đăng ký',
             'courses' => $registeredCourses,
             'stats' => $stats,
             'student' => $student
@@ -71,54 +94,68 @@ class Courses extends Controller {
         $this->view('courses/registered', $data);
     }
 
-    public function delete($mahp) {
-        if($_SERVER['REQUEST_METHOD'] == 'POST') {
-            if($this->courseModel->deleteRegistration($_SESSION['masv'], $mahp)) {
-                flash('course_message', 'Đã xóa học phần khỏi danh sách đăng ký');
-                redirect('courses/registered');
-            } else {
-                die('Có lỗi xảy ra khi xóa học phần');
-            }
-        } else {
+    public function delete($mahp = '') {
+        if(!isset($_SESSION['masv'])) {
+            flash('course_message', 'Bạn cần đăng nhập để hủy đăng ký học phần', 'alert alert-danger');
+            redirect('auth/login');
+        }
+
+        if(empty($mahp)) {
+            flash('course_message', 'Không tìm thấy học phần', 'alert alert-danger');
             redirect('courses/registered');
         }
+
+        if($this->courseModel->deleteRegistration($_SESSION['masv'], $mahp)) {
+            flash('course_message', 'Hủy đăng ký học phần thành công', 'alert alert-success');
+        } else {
+            flash('course_message', 'Hủy đăng ký học phần thất bại', 'alert alert-danger');
+        }
+
+        redirect('courses/registered');
     }
 
     public function deleteAll() {
-        if($_SERVER['REQUEST_METHOD'] == 'POST') {
-            if($this->courseModel->deleteAllRegistrations($_SESSION['masv'])) {
-                flash('course_message', 'Đã xóa tất cả học phần đã đăng ký');
-                redirect('courses/registered');
-            } else {
-                die('Có lỗi xảy ra khi xóa học phần');
-            }
-        } else {
-            redirect('courses/registered');
+        if(!isset($_SESSION['masv'])) {
+            flash('course_message', 'Bạn cần đăng nhập để hủy đăng ký học phần', 'alert alert-danger');
+            redirect('auth/login');
         }
+
+        if($this->courseModel->deleteAllRegistrations($_SESSION['masv'])) {
+            flash('course_message', 'Hủy tất cả đăng ký học phần thành công', 'alert alert-success');
+        } else {
+            flash('course_message', 'Hủy tất cả đăng ký học phần thất bại', 'alert alert-danger');
+        }
+
+        redirect('courses/registered');
     }
 
-    public function save() {
-        if($_SERVER['REQUEST_METHOD'] == 'POST') {
-            // Get current registration details
-            $registeredCourses = $this->courseModel->getRegisteredCourses($_SESSION['masv']);
-            $stats = $this->courseModel->getRegistrationStats($_SESSION['masv']);
-            
-            if(empty($registeredCourses)) {
-                flash('course_message', 'Không có học phần nào để lưu', 'alert alert-warning');
-                redirect('courses');
-                return;
-            }
-
-            // Save registration confirmation
-            if($this->courseModel->saveRegistrationConfirmation($_SESSION['masv'])) {
-                flash('course_message', 'Đã lưu thông tin đăng ký học phần thành công', 'alert alert-success');
-                redirect('courses/registered');
-            } else {
-                flash('course_message', 'Có lỗi xảy ra khi lưu thông tin đăng ký', 'alert alert-danger');
-                redirect('courses');
-            }
-        } else {
-            redirect('courses');
+    public function confirm() {
+        if(!isset($_SESSION['masv'])) {
+            flash('course_message', 'Bạn cần đăng nhập để xác nhận đăng ký học phần', 'alert alert-danger');
+            redirect('auth/login');
         }
+
+        if($_SERVER['REQUEST_METHOD'] != 'POST') {
+            redirect('courses/registered');
+        }
+
+        // Get temporary registrations
+        $tempRegistrations = isset($_SESSION['temp_registrations'][$_SESSION['masv']]) 
+            ? $_SESSION['temp_registrations'][$_SESSION['masv']] 
+            : [];
+
+        if(empty($tempRegistrations)) {
+            flash('course_message', 'Không có học phần nào để lưu', 'alert alert-warning');
+            redirect('courses/registered');
+        }
+
+        // Save registrations to database
+        if($this->courseModel->saveRegistrationConfirmation($_SESSION['masv'])) {
+            flash('course_message', 'Xác nhận đăng ký học phần thành công', 'alert alert-success');
+        } else {
+            flash('course_message', 'Xác nhận đăng ký học phần thất bại', 'alert alert-danger');
+        }
+
+        redirect('courses/registered');
     }
 } 

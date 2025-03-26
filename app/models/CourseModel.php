@@ -248,18 +248,39 @@ class CourseModel {
         $this->db->beginTransaction();
         
         try {
-            // Create new registration
-            $this->db->query('INSERT INTO DangKy (MaSV, NgayDK) VALUES (:masv, NOW())');
+            // Check if student already has a registration
+            $this->db->query('SELECT MaDK FROM DangKy WHERE MaSV = :masv');
             $this->db->bind(':masv', $masv);
-            $this->db->execute();
-            $madk = $this->db->lastInsertId();
+            $result = $this->db->single();
+            
+            $madk = null;
+            
+            if($result) {
+                // Use existing registration
+                $madk = $result->MaDK;
+            } else {
+                // Create new registration if none exists
+                $this->db->query('INSERT INTO DangKy (MaSV, NgayDK) VALUES (:masv, NOW())');
+                $this->db->bind(':masv', $masv);
+                $this->db->execute();
+                $madk = $this->db->lastInsertId();
+            }
 
             // Add all temporary courses to registration
             foreach($_SESSION['temp_registrations'][$masv] as $mahp => $course) {
-                $this->db->query('INSERT INTO ChiTietDangKy (MaDK, MaHP) VALUES (:madk, :mahp)');
+                // Check if course is already registered
+                $this->db->query('SELECT COUNT(*) as count FROM ChiTietDangKy WHERE MaDK = :madk AND MaHP = :mahp');
                 $this->db->bind(':madk', $madk);
                 $this->db->bind(':mahp', $mahp);
-                $this->db->execute();
+                $exists = $this->db->single()->count > 0;
+
+                if(!$exists) {
+                    // Only insert if not already registered
+                    $this->db->query('INSERT INTO ChiTietDangKy (MaDK, MaHP) VALUES (:madk, :mahp)');
+                    $this->db->bind(':madk', $madk);
+                    $this->db->bind(':mahp', $mahp);
+                    $this->db->execute();
+                }
             }
 
             // Clear temporary registrations
@@ -269,6 +290,7 @@ class CourseModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
+            error_log("Error saving registration: " . $e->getMessage());
             return false;
         }
     }

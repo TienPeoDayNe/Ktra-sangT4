@@ -1,119 +1,116 @@
 <?php require APPROOT . '/views/inc/header.php'; ?>
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>Học phần đã đăng ký</h2>
-                <div>
-                    <?php if(!empty($data['courses'])) : ?>
-                        <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#confirmModal">
-                            <i class="fa fa-save"></i> Lưu đăng ký
-                        </button>
-                        <form class="d-inline" action="<?php echo URLROOT; ?>/courses/deleteAll" method="post" 
-                              onsubmit="return confirm('Bạn có chắc muốn xóa tất cả học phần đã đăng ký?');">
-                            <button type="submit" class="btn btn-danger me-2">
-                                <i class="fa fa-trash"></i> Xóa tất cả đăng ký
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2>Danh sách học phần đã đăng ký</h2>
+                    <div>
+                        <a href="<?php echo URLROOT; ?>/courses" class="btn btn-info">
+                            <i class="fa fa-arrow-left"></i> Quay lại
+                        </a>
+                        <?php if(!empty($data['courses'])): ?>
+                            <form action="<?php echo URLROOT; ?>/courses/confirm" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fa fa-save"></i> Lưu đăng ký học phần
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteAllModal">
+                                <i class="fa fa-trash"></i> Xóa tất cả
                             </button>
-                        </form>
-                    <?php endif; ?>
-                    <a href="<?php echo URLROOT; ?>/courses" class="btn btn-light">
-                        <i class="fa fa-backward"></i> Quay lại
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <?php flash('course_message'); ?>
-                
-                <!-- Thống kê -->
-                <div class="alert alert-info mb-3">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong>Số học phần:</strong> <?php echo $data['stats']->SoHocPhan ?? 0; ?>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Tổng số tín chỉ:</strong> <?php echo $data['stats']->TongTinChi ?? 0; ?>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
+                <div class="card-body">
+                    <?php flash('course_message'); ?>
 
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Mã học phần</th>
-                                <th>Tên học phần</th>
-                                <th>Số tín chỉ</th>
-                                <th>Ngày đăng ký</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if(empty($data['courses'])) : ?>
-                                <tr>
-                                    <td colspan="5" class="text-center">Bạn chưa đăng ký học phần nào</td>
-                                </tr>
-                            <?php else : ?>
-                                <?php foreach($data['courses'] as $course) : ?>
+                    <!-- Thông tin sinh viên -->
+                    <div class="alert alert-info">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>MSSV:</strong> <?php echo $data['student']->MaSV; ?>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Họ tên:</strong> <?php echo $data['student']->HoTen; ?>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Ngành:</strong> <?php echo $data['student']->TenNganh; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thống kê -->
+                    <div class="alert alert-warning">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Số học phần:</strong> <?php echo $data['stats']->SoHocPhan ?? 0; ?>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tổng số tín chỉ:</strong> <?php echo $data['stats']->TongTinChi ?? 0; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php if(empty($data['courses'])): ?>
+                        <div class="alert alert-warning">
+                            Bạn chưa đăng ký học phần nào.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead class="thead-dark">
                                     <tr>
-                                        <td><?php echo $course->MaHP; ?></td>
-                                        <td><?php echo $course->TenHP; ?></td>
-                                        <td><?php echo $course->SoTinChi; ?></td>
-                                        <td><?php echo date('d/m/Y', strtotime($course->NgayDK)); ?></td>
-                                        <td>
-                                            <form class="d-inline" action="<?php echo URLROOT; ?>/courses/delete/<?php echo $course->MaHP; ?>" method="post"
-                                                  onsubmit="return confirm('Bạn có chắc muốn xóa học phần này?');">
-                                                <button type="submit" class="btn btn-sm btn-danger">
-                                                    <i class="fa fa-times"></i> Xóa
-                                                </button>
-                                            </form>
-                                        </td>
+                                        <th>Mã học phần</th>
+                                        <th>Tên học phần</th>
+                                        <th>Số tín chỉ</th>
+                                        <th>Ngày đăng ký</th>
+                                        <th>Thao tác</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                </thead>
+                                <tbody>
+                                    <?php foreach($data['courses'] as $course): ?>
+                                        <tr>
+                                            <td><?php echo $course->MaHP; ?></td>
+                                            <td><?php echo $course->TenHP; ?></td>
+                                            <td><?php echo $course->SoTinChi; ?></td>
+                                            <td><?php echo date('d/m/Y H:i:s', strtotime($course->NgayDK)); ?></td>
+                                            <td>
+                                                <a href="<?php echo URLROOT; ?>/courses/delete/<?php echo $course->MaHP; ?>" 
+                                                   class="btn btn-danger btn-sm"
+                                                   onclick="return confirm('Bạn có chắc muốn hủy đăng ký học phần này?');">
+                                                    <i class="fa fa-trash"></i> Hủy
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal xác nhận đăng ký -->
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Modal xác nhận xóa tất cả -->
+<div class="modal fade" id="deleteAllModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="confirmModalLabel">Thông tin đăng ký</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="deleteAllModalLabel">Xác nhận xóa</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-            <form action="<?php echo URLROOT; ?>/courses/save" method="post">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Mã số sinh viên:</label>
-                        <input type="text" class="form-control" value="<?php echo $data['student']->MaSV; ?>" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Họ tên sinh viên:</label>
-                        <input type="text" class="form-control" value="<?php echo $data['student']->HoTen; ?>" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Ngành học:</label>
-                        <input type="text" class="form-control" value="<?php echo $data['student']->TenNganh; ?>" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Ngày đăng ký:</label>
-                        <input type="text" class="form-control" value="<?php echo date('d/m/Y H:i:s'); ?>" readonly>
-                    </div>
-                    <div class="alert alert-info">
-                        <strong>Số học phần đăng ký:</strong> <?php echo $data['stats']->SoHocPhan ?? 0; ?><br>
-                        <strong>Tổng số tín chỉ:</strong> <?php echo $data['stats']->TongTinChi ?? 0; ?>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-success">Xác nhận</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                Bạn có chắc chắn muốn xóa tất cả học phần đã đăng ký?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                <a href="<?php echo URLROOT; ?>/courses/deleteAll" class="btn btn-danger">Xác nhận xóa</a>
+            </div>
         </div>
     </div>
 </div>
